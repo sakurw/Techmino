@@ -70,7 +70,7 @@ function scene.keyDown(key,isRep)
         end
     elseif key=="a"then
         if _testButton(3)then
-            if WS.status('app')=='running'then
+            if WS.status('app')=='open'then
                 NET.tryLogin(false)
             elseif WS.status('app')=='closed'then
                 NET.wsconn_app()

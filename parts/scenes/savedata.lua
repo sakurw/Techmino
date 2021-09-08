@@ -79,7 +79,7 @@ scene.widgetList={
         end},
 
     WIDGET.newText{name="couldSave",  x=55,y=485,color='lB',align='L',font=50},
-    WIDGET.newText{name="notLogin",   x=55,y=550,color='dB',align='L',font=30,hideF=function()return WS.status('user')=='running'end},
+    WIDGET.newText{name="notLogin",   x=55,y=550,color='dB',align='L',font=30,hideF=function()return WS.status('user')=='open'end},
     WIDGET.newButton{name="upload",   x=190,y=610,w=280,h=90,color='lB',font=25,code=NET.uploadSave,hideF=function()return WS.status('user')~='running'end},
     WIDGET.newButton{name="download", x=490,y=610,w=280,h=90,color='lB',font=25,code=NET.downloadSave,hideF=function()return WS.status('user')~='running'end},
     WIDGET.newButton{name="back",     x=1140,y=640,w=170,h=80,fText=TEXTURE.back,code=backScene},

@@ -803,7 +803,7 @@ local commands={}do
         },
     }
     function commands.manage()
-        if WS.status('manage')=='running'then
+        if WS.status('manage')=='open'then
             WS.close('manage')
             log{C.Y,"Disconnected"}
         else

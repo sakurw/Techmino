@@ -685,10 +685,12 @@ function love.run()
 
                         gc_replaceTransform(SCR.xOy_dr)
                             --Websocket status
+                            setFont(10)
                             for i=1,6 do
                                 local status=WS.status(WSnames[i])
                                 gc_setColor(1,1,1)
                                 gc.draw(wsBottomImage,-79,20*i-139)
+                                gc.print(status,-100,20*i-136)
                                 if status=='closed'then
                                     gc_draw(ws_deadImg,-20,20*i-140)
                                 elseif status=='tcpopening'or status=='connecting'then

@@ -1,17 +1,8 @@
-local timer=love.timer.getTime
-local OPcode={
-    continue=0,
-    text=1,
-    binary=2,
-    close=8,
-    ping=9,
-    pong=10,
-}
-
 local host=
-    -- '127.0.0.1'
-    -- '192.168.114.102'
     'game.techmino.org'
+    -- '192.168.223.2'
+    -- '192.168.114.102'
+    -- '127.0.0.1'
 local port='10026'
 local path='/tech/socket/v1'
 local seckey="osT3F7mvlojIvf3/8uIsJQ=="
@@ -28,13 +19,23 @@ local seckey="osT3F7mvlojIvf3/8uIsJQ=="
             client:update()
         end
 ]]
-
-local Sock={}
-
 local socket=require"socket"
+local timer=love.timer.getTime
 local char,byte=string.char,string.byte
 local band,bor,bxor=bit.band,bit.bor,bit.bxor
 local shl,shr=bit.lshift,bit.rshift
+local OPcode={
+    continue=0,
+    text=1,
+    binary=2,
+    close=8,
+    ping=9,
+    pong=10,
+}
+
+---@class Socket
+---@field socket userdata socket-tcp object
+local Sock={}
 
 Sock.__index=Sock
 
@@ -186,20 +187,12 @@ function Sock:close(code,message)
     self.status='closing'
 end
 
----set ping interval of a socket object
-function Sock:setPingInterval(interval)
-    self.setPingInterval=interval
-end
-
 
 
 local WS={}
-local socks={}
-setmetatable(socks,{__index=function(list,name)
-    WS.new(name)
-    return list[name]
-end})
+local socks={}setmetatable(socks,{__index=function(_,name)WS.new(name)return socks[name]end})
 
+---@return Socket
 function WS.new(name,_subpath,_body,_timeout)
     local m={
         real=true,
@@ -223,7 +216,7 @@ function WS.new(name,_subpath,_body,_timeout)
         alertTimer=0,
         pongTimer=0,
 
-        status='tcpopening',--'tcpopening','connecting','open','closed','closing'
+        status=_subpath and'tcpopening'or'closed',--'tcpopening','connecting','open','closed','closing'
     }
     if _subpath then
         m.socket:settimeout(0)
@@ -231,14 +224,18 @@ function WS.new(name,_subpath,_body,_timeout)
     end
     setmetatable(m,Sock)
     socks[name]=m
+    return m
 end
 
-function WS.get(name)
-    return socks[name]
-end
+function WS.setPingInterval(name,interval)socks[name].pingInterval=interval end
+function WS.setOnMessage(name,func)socks[name].onmessage=func end
+function WS.setOnClose(name,func)socks[name].onclose=func end
+function WS.setOnError(name,func)socks[name].onerror=func end
 
 function WS.send(name,message)
-    socks[name]:send(message)
+    if socks[name].status=='open'then
+        socks[name]:send(message)
+    end
 end
 
 function WS.read(name)
@@ -258,7 +255,6 @@ function WS.alert(name)
     socks[name].alertTimer=2.6
 end
 
----cut all connections and switch to another host
 function WS.switchHost(_1,_2,_3)
     for _,s in next,socks do s:close()end
     host=_1
@@ -266,12 +262,12 @@ function WS.switchHost(_1,_2,_3)
     path=_3 or path
 end
 
----update client status
 function WS.update(dt)
+    local t=timer()
     for name,self in next,socks do
         local sock=self.socket
         if self.status=='tcpopening'then
-            local _,err=sock:connect("",0)
+            local _,err=sock:connect(host,port)
             if err=="already connected"then
                 if not self._body then self._body=""end
                 sock:send(
@@ -287,12 +283,12 @@ function WS.update(dt)
                 )
                 self.status='connecting'
                 self._body=nil
-            elseif err=="Cannot assign requested address"then
-                self.errMes="TCP connection failed."
+            elseif err then
+                self.errMes=err
                 self.status='closed'
                 self:onerror(self.errMes)
                 WS.alert(name)
-                MES.new('warn',text.wsClose..(self.errMes or"Closed"))
+                MES.new('warn',text.wsClose..(self.errMes or"Unknown reason"))
             end
         elseif self.status=='connecting'then
             local res=sock:receive("*l")
@@ -300,8 +296,8 @@ function WS.update(dt)
                 repeat res=sock:receive("*l")until res==""
                 self:onopen()
                 self.status='open'
-                self.lastPingTime=timer()
-                self.lastPongTime=timer()
+                self.lastPingTime=t
+                self.lastPongTime=t
                 self.pongTimer=1
             end
         elseif self.status=='open'or self.status=='closing'then
@@ -334,10 +330,11 @@ function WS.update(dt)
                     if fin then self:onmessage(res)else self._continue=res end
                 end
             end
+            if self.sendTimer>0 then self.sendTimer=self.sendTimer-dt end
+            if self.pongTimer>0 then self.pongTimer=self.pongTimer-dt end
+            if self.alertTimer>0 then self.alertTimer=self.alertTimer-dt end
+            if t-self.lastPingTime>self.pingInterval then self:ping()end
         end
-        if self.sendTimer>0 then self.sendTimer=self.sendTimer-dt end
-        if self.pongTimer>0 then self.pongTimer=self.pongTimer-dt end
-        if self.alertTimer>0 then self.alertTimer=self.alertTimer-dt end
     end
 end
 
