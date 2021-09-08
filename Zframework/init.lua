@@ -686,7 +686,7 @@ function love.run()
                         gc_replaceTransform(SCR.xOy_dr)
                             --Websocket status
                             for i=1,6 do
-                                local status=WS.status(WSnames[i])
+                                local status=WS[WSnames[i]].status
                                 gc_setColor(1,1,1)
                                 gc.draw(wsBottomImage,-79,20*i-139)
                                 if status=='dead'then
@@ -697,7 +697,7 @@ function love.run()
                                 elseif status=='running'then
                                     gc_draw(ws_runningImg,-20,20*i-140)
                                 end
-                                local t1,t2,t3=WS.getTimers(WSnames[i])
+                                local t1,t2,t3=WS[WSnames[i]].getTimers()
                                 gc_setColor(.9,.9,.9,t1)gc.rectangle('fill',-60,20*i-122,-16,-16)
                                 gc_setColor(.3,1,.3,t2)gc.rectangle('fill',-42,20*i-122,-16,-16)
                                 gc_setColor(1,.2,.2,t3)gc.rectangle('fill',-24,20*i-122,-16,-16)

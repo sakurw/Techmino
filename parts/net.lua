@@ -81,7 +81,7 @@ local function _parseNotice(str)
     return str[SETTING.lang<=3 and 1 or 2]or str[1]
 end
 
---WS close message
+--SOCK close message
 local function _closeMessage(message)
     local mes=JSON.decode(message)
     if mes then
@@ -122,7 +122,7 @@ end
 function NET.wsconn_app()
     if WS.status('app')=='dead'then
         WS.connect('app','/app',nil,6)
-        WS.get('app').onmessage = function (self,message)
+        WS.get('app').onmessage=function(self,message)
             local res=_parse(message)
             if res then
                 if res.type=='Connect'then
@@ -414,7 +414,7 @@ function NET.quitChat()
     WS.send('chat','q')
 end
 
---WS task funcs
+--SOCK task funcs
 function NET.freshPlayerCount()
     while WS.status('app')=='running'do
         for _=1,260 do yield()end
