@@ -120,8 +120,8 @@ end
 
 --Connect
 function NET.wsconn_app()
-    if WS.status('app')=='dead'then
-        WS.connect('app','/app',nil,6)
+    if WS.status('app')=='closed'then
+        WS.new('app','/app',nil,6)
         WS.get('app').onmessage=function(self,message)
             local res=_parse(message)
             if res then
@@ -165,12 +165,11 @@ function NET.wsconn_app()
                 WS.alert('app')
             end
         end
-        TASK.new(NET.updateWS_app)
     end
 end
 function NET.wsconn_user_pswd(email,password)
-    if WS.status('user')=='dead'then
-        WS.connect('user','/user',JSON.encode{
+    if WS.status('user')=='closed'then
+        WS.new('user','/user',JSON.encode{
             email=email,
             password=password,
         },6)
@@ -178,8 +177,8 @@ function NET.wsconn_user_pswd(email,password)
     end
 end
 function NET.wsconn_user_token(uid,authToken)
-    if WS.status('user')=='dead'then
-        WS.connect('user','/user',JSON.encode{
+    if WS.status('user')=='closed'then
+        WS.new('user','/user',JSON.encode{
             uid=uid,
             authToken=authToken,
         },6)
@@ -187,8 +186,8 @@ function NET.wsconn_user_token(uid,authToken)
     end
 end
 function NET.wsconn_play()
-    if WS.status('play')=='dead'then
-        WS.connect('play','/play',JSON.encode{
+    if WS.status('play')=='closed'then
+        WS.new('play','/play',JSON.encode{
             uid=USER.uid,
             accessToken=NET.accessToken,
         },6)
@@ -196,9 +195,9 @@ function NET.wsconn_play()
     end
 end
 function NET.wsconn_stream(srid)
-    if WS.status('stream')=='dead'then
+    if WS.status('stream')=='closed'then
         NET.roomState.start=true
-        WS.connect('stream','/stream',JSON.encode{
+        WS.new('stream','/stream',JSON.encode{
             uid=USER.uid,
             accessToken=NET.accessToken,
             srid=srid,
@@ -207,8 +206,8 @@ function NET.wsconn_stream(srid)
     end
 end
 function NET.wsconn_manage()
-    if WS.status('manage')=='dead'then
-        WS.connect('manage','/manage',JSON.encode{
+    if WS.status('manage')=='closed'then
+        WS.new('manage','/manage',JSON.encode{
             uid=USER.uid,
             authToken=USER.authToken,
         },6)
@@ -423,14 +422,8 @@ function NET.freshPlayerCount()
         end
     end
 end
-function NET.updateWS_app()
-    while WS.status('app')~='dead'do
-        WS.get('app'):update()
-        yield()
-    end
-end
 function NET.updateWS_user()
-    while WS.status('user')~='dead'do
+    while WS.status('user')~='closed'do
         yield()
         local message=WS.read('user')
         if message then
@@ -471,7 +464,7 @@ function NET.updateWS_user()
     end
 end
 function NET.updateWS_play()
-    while WS.status('play')~='dead'do
+    while WS.status('play')~='closed'do
         yield()
         local message=WS.read('play')
         if message then
@@ -600,7 +593,7 @@ function NET.updateWS_play()
     end
 end
 function NET.updateWS_stream()
-    while WS.status('stream')~='dead'do
+    while WS.status('stream')~='closed'do
         yield()
         local message=WS.read('stream')
         if message then
@@ -663,7 +656,7 @@ function NET.updateWS_stream()
     end
 end
 function NET.updateWS_chat()
-    while WS.status('chat')~='dead'do
+    while WS.status('chat')~='closed'do
         yield()
         local message=WS.read('chat')
         if message then
@@ -677,7 +670,7 @@ function NET.updateWS_chat()
     end
 end
 function NET.updateWS_manage()
-    while WS.status('manage')~='dead'do
+    while WS.status('manage')~='closed'do
         yield()
         local message=WS.read('manage')
         if message then

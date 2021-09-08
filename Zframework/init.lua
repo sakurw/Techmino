@@ -686,18 +686,18 @@ function love.run()
                         gc_replaceTransform(SCR.xOy_dr)
                             --Websocket status
                             for i=1,6 do
-                                local status=WS[WSnames[i]].status
+                                local status=WS.status(WSnames[i])
                                 gc_setColor(1,1,1)
                                 gc.draw(wsBottomImage,-79,20*i-139)
-                                if status=='dead'then
+                                if status=='closed'then
                                     gc_draw(ws_deadImg,-20,20*i-140)
-                                elseif status=='connecting'then
+                                elseif status=='tcpopening'or status=='connecting'then
                                     gc_setColor(1,1,1,.5+.3*sin(time*6.26))
                                     gc_draw(ws_connectingImg,-20,20*i-140)
-                                elseif status=='running'then
+                                elseif status=='open'then
                                     gc_draw(ws_runningImg,-20,20*i-140)
                                 end
-                                local t1,t2,t3=WS[WSnames[i]].getTimers()
+                                local t1,t2,t3=WS.getTimers(WSnames[i])
                                 gc_setColor(.9,.9,.9,t1)gc.rectangle('fill',-60,20*i-122,-16,-16)
                                 gc_setColor(.3,1,.3,t2)gc.rectangle('fill',-42,20*i-122,-16,-16)
                                 gc_setColor(1,.2,.2,t3)gc.rectangle('fill',-24,20*i-122,-16,-16)

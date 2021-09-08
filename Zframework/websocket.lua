@@ -16,10 +16,6 @@ local port='10026'
 local path='/tech/socket/v1'
 local seckey="osT3F7mvlojIvf3/8uIsJQ=="
 
-local WS={}
-local socks={}
-setmetatable(WS,{__index=socks})
-
 --[[
     websocket client pure lua implement for love2d
     by flaribbit, editted by MrZ
@@ -32,61 +28,37 @@ setmetatable(WS,{__index=socks})
             client:update()
         end
 ]]
+
+local Sock={}
+
 local socket=require"socket"
 local char,byte=string.char,string.byte
 local band,bor,bxor=bit.band,bit.bor,bit.bxor
 local shl,shr=bit.lshift,bit.rshift
 
-WS.__index=WS
-function WS:onopen()end
-function WS:onmessage(message)end
-function WS:onerror(error)end
-function WS:onclose(code,reason)end
+Sock.__index=Sock
 
----create websocket connection
-function WS.new(name,_subpath,_body,_timeout)
-    local m={
-        socket=socket.tcp(),
-        _path=path.._subpath,
-        _body=_body,
-        _timeout=_timeout,
+---socket opened
+function Sock:onopen()end
 
-        _continue="",
-        _buffer="",
-        _length=2,
-        _head=nil,
+---receive a message
+---@param message string
+function Sock:onmessage(message)end
 
-        errMes=false,
-        errCode=false,
+---closed
+---@param code number
+---@param reason string
+function Sock:onclose(code,reason)end
 
-        lastPingTime=0,
-        lastPongTime=timer(),
-        pingInterval=6,
-        sendTimer=0,
-        alertTimer=0,
-        pongTimer=0,
-
-        status='tcpopening',--'tcpopening','connecting','open','closed','closing'
-    }
-    m.socket:settimeout(0)
-    m.socket:connect(host,port)
-    setmetatable(m,WS)
-    socks[name]=m
-end
-
----cut all connections and switch to another host
-function WS.switchHost(_1,_2,_3)
-    for _,s in next,socks do s:close()end
-    host=_1
-    port=_2 or port
-    path=_3 or path
-end
+---error
+---@param error string
+function Sock:onerror(error)end
 
 ---read a message
 ---@return string|nil res message
 ---@return number|nil head websocket frame header
 ---@return string|nil err error message
-function WS:read()
+function Sock:read()
     local res,err,part
     ::AGAIN_RECIEVE::
     res,err,part=self.socket:receive(self._length-#self._buffer)
@@ -176,7 +148,8 @@ end
 
 ---send a message
 ---@param message string
-function WS:send(message,op)
+---@param op string
+function Sock:send(message,op)
     if type(message)=='string'then
         self.lastPingTime=timer()
         self.sendTimer=1
@@ -188,24 +161,114 @@ function WS:send(message,op)
 end
 
 ---send a ping message
----@param message string
-function WS:ping(message)
+function Sock:ping(message)
     self.sendTimer=1
     self.lastPingTime=timer()
     send(self.socket,1--[[ping]],message)
 end
 
 ---send a pong message (no need)
----@param message any
-function WS:pong(message)
+function Sock:pong(message)
     self.pongTimer=0
     self.lastPongTime=timer()
     send(self.socket,101--[[pong]],message)
 end
 
+---close websocket connection
+---@param code integer|nil
+---@param message string|nil
+function Sock:close(code,message)
+    if code and message then
+        send(self.socket,8--[[close]],char(shr(code,8),band(code,0xff))..message)
+    else
+        send(self.socket,8--[[close]],nil)
+    end
+    self.status='closing'
+end
+
+---set ping interval of a socket object
+function Sock:setPingInterval(interval)
+    self.setPingInterval=interval
+end
+
+
+
+local WS={}
+local socks={}
+setmetatable(socks,{__index=function(list,name)
+    WS.new(name)
+    return list[name]
+end})
+
+function WS.new(name,_subpath,_body,_timeout)
+    local m={
+        real=true,
+        socket=socket.tcp(),
+        _path=path..(_subpath or""),
+        _body=_body or"",
+        _timeout=_timeout,
+
+        _continue="",
+        _buffer="",
+        _length=2,
+        _head=nil,
+
+        errMes=false,
+        errCode=false,
+
+        lastPingTime=0,
+        lastPongTime=timer(),
+        pingInterval=6,
+        sendTimer=0,
+        alertTimer=0,
+        pongTimer=0,
+
+        status='tcpopening',--'tcpopening','connecting','open','closed','closing'
+    }
+    if _subpath then
+        m.socket:settimeout(0)
+        m.socket:connect(host,port)
+    end
+    setmetatable(m,Sock)
+    socks[name]=m
+end
+
+function WS.get(name)
+    return socks[name]
+end
+
+function WS.send(name,message)
+    socks[name]:send(message)
+end
+
+function WS.read(name)
+    return socks[name]:read()
+end
+
+function WS.status(name)
+    return socks[name].status
+end
+
+function WS.getTimers(name)
+    local self=socks[name]
+    return self.pongTimer,self.sendTimer,self.alertTimer
+end
+
+function WS.alert(name)
+    socks[name].alertTimer=2.6
+end
+
+---cut all connections and switch to another host
+function WS.switchHost(_1,_2,_3)
+    for _,s in next,socks do s:close()end
+    host=_1
+    port=_2 or port
+    path=_3 or path
+end
+
 ---update client status
 function WS.update(dt)
-    for _,self in next,socks do
+    for name,self in next,socks do
         local sock=self.socket
         if self.status=='tcpopening'then
             local _,err=sock:connect("",0)
@@ -228,8 +291,8 @@ function WS.update(dt)
                 self.errMes="TCP connection failed."
                 self.status='closed'
                 self:onerror(self.errMes)
-                self:alert()
-                MES.new('warn',text.wsClose..(self.sock.errMes or"Closed"))
+                WS.alert(name)
+                MES.new('warn',text.wsClose..(self.errMes or"Closed"))
             end
         elseif self.status=='connecting'then
             local res=sock:receive("*l")
@@ -242,35 +305,33 @@ function WS.update(dt)
                 self.pongTimer=1
             end
         elseif self.status=='open'or self.status=='closing'then
-            while true do
-                local res,head,err=self:read()
-                if err=="closed"then
-                    self.errMes="Closed"
-                    self.status='closed'
-                    self:alert()
-                    MES.new('warn',text.wsFailed)
-                    return
-                elseif res then
-                    local opcode=band(head,0x0f)
-                    local fin=band(head,0x80)==0x80
-                    if opcode==8--[[close]]then
-                        if res~=""then
-                            self.errCode=shl(byte(res,1),8)+byte(res,2)
-                            self.errMes=res:sub(3)
-                            self:onclose(self.errCode,self.errMes)
-                        else
-                            self:onclose(1005,"")
-                        end
-                        sock:close()
-                        self.status='closed'
-                    elseif opcode==9--[[ping]]then
-                        self:pong(res)
-                    elseif opcode==0--[[continue]]then
-                        self._continue=self._continue..res
-                        if fin then self:onmessage(self._continue)end
+            local res,head,err=self:read()
+            if err=="closed"then
+                self.errMes="Closed"
+                self.status='closed'
+                WS.alert(name)
+                MES.new('warn',text.wsFailed)
+                return
+            elseif res then
+                local opcode=band(head,0x0f)
+                local fin=band(head,0x80)==0x80
+                if opcode==8--[[close]]then
+                    if res~=""then
+                        self.errCode=shl(byte(res,1),8)+byte(res,2)
+                        self.errMes=res:sub(3)
+                        self:onclose(self.errCode,self.errMes)
                     else
-                        if fin then self:onmessage(res)else self._continue=res end
+                        self:onclose(1005,"")
                     end
+                    sock:close()
+                    self.status='closed'
+                elseif opcode==9--[[ping]]then
+                    self:pong(res)
+                elseif opcode==0--[[continue]]then
+                    self._continue=self._continue..res
+                    if fin then self:onmessage(self._continue)end
+                else
+                    if fin then self:onmessage(res)else self._continue=res end
                 end
             end
         end
@@ -278,33 +339,6 @@ function WS.update(dt)
         if self.pongTimer>0 then self.pongTimer=self.pongTimer-dt end
         if self.alertTimer>0 then self.alertTimer=self.alertTimer-dt end
     end
-end
-
----close websocket connection
----@param code integer|nil
----@param message string|nil
-function WS:close(code,message)
-    if code and message then
-        send(self.socket,8--[[close]],char(shr(code,8),band(code,0xff))..message)
-    else
-        send(self.socket,8--[[close]],nil)
-    end
-    self.status='closing'
-end
-
----set ping interval of a socket object
-function WS:setPingInterval(interval)
-    self.setPingInterval=interval
-end
-
----get timers of a socket object
-function WS:getTimers()
-    self.alertTimer=2.6
-end
-
----trigger an alert signal
-function WS:alert()
-    return self.pongTimer,self.sendTimer,self.alertTimer
 end
 
 return WS
