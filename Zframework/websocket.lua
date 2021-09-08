@@ -162,10 +162,10 @@ function Sock:send(message,op)
 end
 
 ---send a ping message
-function Sock:ping(message)
+function Sock:ping()
     self.sendTimer=1
     self.lastPingTime=timer()
-    send(self.socket,1--[[ping]],message)
+    send(self.socket,9--[[ping]],"tech_cli_ping")
 end
 
 ---send a pong message (no need)
@@ -323,6 +323,8 @@ function WS.update(dt)
                     self.status='closed'
                 elseif opcode==9--[[ping]]then
                     self:pong(res)
+                elseif opcode==10--[[pong]]then
+                    --do nothing
                 elseif opcode==0--[[continue]]then
                     self._continue=self._continue..res
                     if fin then self:onmessage(self._continue)end
