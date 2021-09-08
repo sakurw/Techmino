@@ -26,8 +26,9 @@ local Sock do
 
     ---@class wsclient
     ---@field socket table
-    ---@field url table
-    ---@field _head integer|nil
+    ---@field _host string
+    ---@field _path string
+    ---@field _port integer
     Sock={}
 
     Sock.__index=Sock
