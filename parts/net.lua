@@ -122,6 +122,49 @@ end
 function NET.wsconn_app()
     if WS.status('app')=='dead'then
         WS.connect('app','/app',nil,6)
+        WS.get('app').onmessage = function (self,message)
+            local res=_parse(message)
+            if res then
+                if res.type=='Connect'then
+                    if VERSION.code>=res.lowest then
+                        NET.allow_online=true
+                        if USER.authToken then
+                            NET.wsconn_user_token(USER.uid,USER.authToken)
+                        elseif SCN.cur=='main'then
+                            SCN.go('login')
+                        end
+                    end
+                    if VERSION.code<res.newestCode then
+                        MES.new('warn',text.oldVersion:gsub("$1",res.newestName),3)
+                    end
+                    MES.new('broadcast',_parseNotice(res.notice),5)
+                    NET.tryLogin(true)
+                    TASK.new(NET.freshPlayerCount)
+                elseif res.action==0 then--Broadcast
+                    MES.new('broadcast',res.data.message,5)
+                elseif res.action==1 then--Get notice
+                    --?
+                elseif res.action==2 then--Register
+                    if res.type=='Self'or res.type=='Server'then
+                        MES.new('info',res.data.message,5)
+                        if SCN.cur=='register'then
+                            SCN.back()
+                        end
+                    else
+                        MES.new('warn',res.reason or"Registration failed",5)
+                    end
+                    NET.unlock('register')
+                elseif res.action==3 then--Get player counts
+                    NET.UserCount=res.data.User
+                    NET.PlayCount=res.data.Play
+                    NET.StreamCount=res.data.Stream
+                    --res.data.Chat
+                    NET.unlock('freshPlayerCount')
+                end
+            else
+                WS.alert('app')
+            end
+        end
         TASK.new(NET.updateWS_app)
     end
 end
@@ -382,51 +425,8 @@ function NET.freshPlayerCount()
 end
 function NET.updateWS_app()
     while WS.status('app')~='dead'do
+        WS.get('app'):update()
         yield()
-        local message=WS.read('app')
-        if message then
-            local res=_parse(message)
-            if res then
-                if res.type=='Connect'then
-                    if VERSION.code>=res.lowest then
-                        NET.allow_online=true
-                        if USER.authToken then
-                            NET.wsconn_user_token(USER.uid,USER.authToken)
-                        elseif SCN.cur=='main'then
-                            SCN.go('login')
-                        end
-                    end
-                    if VERSION.code<res.newestCode then
-                        MES.new('warn',text.oldVersion:gsub("$1",res.newestName),3)
-                    end
-                    MES.new('broadcast',_parseNotice(res.notice),5)
-                    NET.tryLogin(true)
-                    TASK.new(NET.freshPlayerCount)
-                elseif res.action==0 then--Broadcast
-                    MES.new('broadcast',res.data.message,5)
-                elseif res.action==1 then--Get notice
-                    --?
-                elseif res.action==2 then--Register
-                    if res.type=='Self'or res.type=='Server'then
-                        MES.new('info',res.data.message,5)
-                        if SCN.cur=='register'then
-                            SCN.back()
-                        end
-                    else
-                        MES.new('warn',res.reason or"Registration failed",5)
-                    end
-                    NET.unlock('register')
-                elseif res.action==3 then--Get player counts
-                    NET.UserCount=res.data.User
-                    NET.PlayCount=res.data.Play
-                    NET.StreamCount=res.data.Stream
-                    --res.data.Chat
-                    NET.unlock('freshPlayerCount')
-                end
-            else
-                WS.alert('app')
-            end
-        end
     end
 end
 function NET.updateWS_user()

@@ -334,6 +334,10 @@ function WS.send(name,message,op)
     end
 end
 
+function WS.get(name)
+    return wsList[name].sock
+end
+
 function WS.read(name)
     local ws=wsList[name]
     if ws.real and ws.status~='connecting'then
