@@ -4,22 +4,257 @@ local host=
     'game.techmino.org'
 local port='10026'
 local path='/tech/socket/v1'
+local seckey="osT3F7mvlojIvf3/8uIsJQ=="
 
--- lua + LÖVE threading websocket client
--- Original pure lua ver. by flaribbit and Particle_G
--- Threading version by MrZ
+local Sock do
+    --[[
+        websocket client pure lua implement for love2d
+        by flaribbit, editted by MrZ
+        usage:
+            local client=require("websocket").new("127.0.0.1",5000)
+            function client:onmessage(s)print(s)end
+            function client:onopen()self:send("hello from love2d")end
+            function client:onclose()print("closed")end
+            function love.update()
+                client:update()
+            end
+    ]]
+    local socket=require"socket"
+    local char,byte=string.char,string.byte
+    local band,bor,bxor=bit.band,bit.bor,bit.bxor
+    local shl,shr=bit.lshift,bit.rshift
+
+    ---@class wsclient
+    ---@field socket table
+    ---@field url table
+    ---@field _head integer|nil
+    Sock={}
+
+    Sock.__index=Sock
+    function Sock:onopen()end
+    function Sock:onmessage(message)end
+    function Sock:onerror(error)end
+    function Sock:onclose(code,reason)end
+
+    ---create websocket connection
+    ---@return wsclient
+    function Sock.new(_host,_port,_path,_body,_timeout)
+        local m={
+            socket=socket.tcp(),
+            _host=_host,
+            _port=_port,
+            _path=_path,
+            _body=_body,
+            _timeout=_timeout,
+
+            _continue="",
+            _buffer="",
+            _length=2,
+            _head=nil,
+
+            errMes=false,
+            errCode=false,
+
+            status='tcpopening',--'tcpopening','connecting','open','closed','closing'
+        }
+        m.socket:settimeout(0)
+        m.socket:connect(host,port)
+        setmetatable(m,Sock)
+        return m
+    end
+
+    local mask_key={1,14,5,14}
+    local function send(sock,opcode,message)
+        -- message type
+        sock:send(char(bor(0x80,opcode)))
+
+        -- empty message
+        if not message then
+            sock:send(char(0x80,unpack(mask_key)))
+            return 0
+        end
+
+        -- message length
+        local length=#message
+        if length>65535 then
+            sock:send(char(bor(127,0x80),
+                0,0,0,0,
+                band(shr(length,24),0xff),
+                band(shr(length,16),0xff),
+                band(shr(length,8),0xff),
+                band(length,0xff)))
+        elseif length>125 then
+            sock:send(char(bor(126,0x80),
+                band(shr(length,8),0xff),
+                band(length,0xff)))
+        else
+            sock:send(char(bor(length,0x80)))
+        end
+
+        -- message
+        sock:send(char(unpack(mask_key)))
+        local msgbyte={byte(message,1,length)}
+        for i=1,length do
+            msgbyte[i]=bxor(msgbyte[i],mask_key[(i-1)%4+1])
+        end
+        return sock:send(char(unpack(msgbyte)))
+    end
+
+    ---read a message
+    ---@return string|nil res message
+    ---@return number|nil head websocket frame header
+    ---@return string|nil err error message
+    function Sock:read()
+        local res,err,part
+        ::AGAIN_RECIEVE::
+        res,err,part=self.socket:receive(self._length-#self._buffer)
+        if err=="closed"then
+            return nil,nil,err
+        end
+        if part or res then
+            self._buffer=self._buffer..(part or res)
+        else
+            return nil,nil,nil
+        end
+        if not self._head then
+            if #self._buffer<2 then
+                return nil,nil,"buffer length less than 2"
+            end
+            local length=band(byte(self._buffer,2),0x7f)
+            if length==126 then
+                if self._length==2 then
+                    self._length=4 goto AGAIN_RECIEVE
+                end
+                if #self._buffer<4 then
+                    return nil,nil,"buffer length less than 4"
+                end
+                local b1,b2=byte(self._buffer,3,4)
+                self._length=shl(b1,8)+b2
+            elseif length==127 then
+                if self._length==2 then
+                    self._length=10
+                    goto AGAIN_RECIEVE
+                end
+                if #self._buffer<10 then
+                    return nil,nil,"buffer length less than 10"
+                end
+                local b5,b6,b7,b8=byte(self._buffer,7,10)
+                self._length=shl(b5,24)+shl(b6,16)+shl(b7,8)+b8
+            else
+                self._length=length
+            end
+            self._head,self._buffer=byte(self._buffer,1),""
+            goto AGAIN_RECIEVE
+        end
+        if #self._buffer>=self._length then
+            local ret,head=self._buffer,self._head
+            self._length,self._buffer,self._head=2,"",nil
+            return ret,head,nil
+        else
+            return nil,nil,"buffer length less than "..self._length
+        end
+    end
+
+    ---send a message
+    ---@param message string
+    function Sock:send(message,op)
+        send(self.socket,message,op)
+    end
+
+    ---send a ping message
+    ---@param message string
+    function Sock:ping(message)
+        send(self.socket,1--[[ping]],message)
+    end
+
+    ---send a pong message (no need)
+    ---@param message any
+    function Sock:pong(message)
+        send(self.socket,101--[[pong]],message)
+    end
+
+    ---update client status
+    function Sock:update()
+        local sock=self.socket
+        if self.status=='tcpopening'then
+            local _,err=sock:connect("",0)
+            if err=="already connected"then
+                sock:send(
+                    "GET "..(self._path or"/").." HTTP/1.1\r\n"..
+                    "Host: "..self._host..":"..self._port.."\r\n"..
+                    "Connection: Upgrade\r\n"..
+                    "Upgrade: websocket\r\n"..
+                    "Sec-WebSocket-Version: 13\r\n"..
+                    "Sec-WebSocket-Key: "..seckey.."\r\n\r\n"
+                )
+                self.status='connecting'
+            elseif err=="Cannot assign requested address"then
+                self.errMes="TCP connection failed."
+                self:onerror(self.errMes)
+                self.status='closed'
+            end
+        elseif self.status=='connecting'then
+            local res=sock:receive("*l")
+            if res then
+                repeat res=sock:receive("*l")until res==""
+                self:onopen()
+                self.status='open'
+            end
+        elseif self.status=='open'or self.status=='closing'then
+            while true do
+                local res,head,err=self:read()
+                if err=="closed"then
+                    self.errMes="Closed"
+                    self.status='closed'
+                    return
+                elseif res==nil then
+                    return
+                end
+                local opcode=band(head,0x0f)
+                local fin=band(head,0x80)==0x80
+                if opcode==8--[[close]]then
+                    if res~=""then
+                        self.errCode=shl(byte(res,1),8)+byte(res,2)
+                        self.errMes=res:sub(3)
+                        self:onclose(self.errCode,self.errMes)
+                    else
+                        self:onclose(1005,"")
+                    end
+                    sock:close()
+                    self.status='closed'
+                elseif opcode==9--[[ping]]then
+                    self:pong(res)
+                elseif opcode==0--[[continue]]then
+                    self._continue=self._continue..res
+                    if fin then self:onmessage(self._continue)end
+                else
+                    if fin then self:onmessage(res)else self._continue=res end
+                end
+            end
+        end
+    end
+
+    ---close websocket connection
+    ---@param code integer|nil
+    ---@param message string|nil
+    function Sock:close(code,message)
+        if code and message then
+            send(self.socket,8--[[close]],char(shr(code,8),band(code,0xff))..message)
+        else
+            send(self.socket,8--[[close]],nil)
+        end
+        self.status='closing'
+    end
+end
 
 local type=type
 local timer=love.timer.getTime
-local CHN=love.thread.newChannel()
-local CHN_getCount,CHN_push,CHN_pop=CHN.getCount,CHN.push,CHN.pop
-local TRD=love.thread.newThread("\n")
-local TRD_isRunning=TRD.isRunning
 
 local WS={}
 local wsList=setmetatable({},{
     __index=function(l,k)
         local ws={
+            sock=nil,
             real=false,
             status='dead',
             lastPongTime=timer(),
@@ -42,15 +277,9 @@ function WS.switchHost(_1,_2,_3)
 end
 
 function WS.connect(name,subPath,body,timeout)
-    if wsList[name]and wsList[name].thread then
-        wsList[name].thread:release()
-    end
     local ws={
         real=true,
-        thread=love.thread.newThread('Zframework/websocket_thread.lua'),
-        triggerCHN=love.thread.newChannel(),
-        sendCHN=love.thread.newChannel(),
-        readCHN=love.thread.newChannel(),
+        sock=Sock.new(host,port,path..subPath,body or"",timeout or 2.6),
         lastPingTime=0,
         lastPongTime=timer(),
         pingInterval=6,
@@ -60,17 +289,11 @@ function WS.connect(name,subPath,body,timeout)
         pongTimer=0,
     }
     wsList[name]=ws
-    ws.thread:start(ws.triggerCHN,ws.sendCHN,ws.readCHN)
-    CHN_push(ws.sendCHN,host)
-    CHN_push(ws.sendCHN,port)
-    CHN_push(ws.sendCHN,path..subPath)
-    CHN_push(ws.sendCHN,body or"")
-    CHN_push(ws.sendCHN,timeout or 2.6)
 end
 
 function WS.status(name)
     local ws=wsList[name]
-    return ws.status or'dead'
+    return ws.status
 end
 
 function WS.getTimers(name)
@@ -96,20 +319,11 @@ local OPcode={
     ping=9,
     pong=10,
 }
-local OPname={
-    [0]='continue',
-    [1]='text',
-    [2]='binary',
-    [8]='close',
-    [9]='ping',
-    [10]='pong',
-}
 function WS.send(name,message,op)
     if type(message)=='string'then
         local ws=wsList[name]
         if ws.real and ws.status=='running'then
-            CHN_push(ws.sendCHN,op and OPcode[op]or 2)--2=binary
-            CHN_push(ws.sendCHN,message)
+            ws.sock:send(message,op and OPcode[op]or 2)
             ws.lastPingTime=timer()
             ws.sendTimer=1
         end
@@ -121,24 +335,20 @@ end
 
 function WS.read(name)
     local ws=wsList[name]
-    if ws.real and ws.status~='connecting'and CHN_getCount(ws.readCHN)>=2 then
-        local op,message=CHN_pop(ws.readCHN),CHN_pop(ws.readCHN)
-        if op==8 then--8=close
-            ws.status='dead'
-        elseif op==9 then--9=ping
-            WS.send(name,message or"",'pong')
+    if ws.real and ws.status~='connecting'then
+        local message=ws.sock:read()
+        if message then
+            ws.lastPongTime=timer()
+            ws.pongTimer=1
+            return message
         end
-        ws.lastPongTime=timer()
-        ws.pongTimer=1
-        return message,OPname[op]or op
     end
 end
 
 function WS.close(name)
     local ws=wsList[name]
     if ws.real then
-        CHN_push(ws.sendCHN,8)--close
-        CHN_push(ws.sendCHN,"")
+        ws.sock:close()
         ws.status='dead'
     end
 end
@@ -147,43 +357,31 @@ function WS.update(dt)
     local time=timer()
     for name,ws in next,wsList do
         if ws.real and ws.status~='dead'then
-            if TRD_isRunning(ws.thread)then
-                if CHN_getCount(ws.triggerCHN)==0 then
-                    CHN_push(ws.triggerCHN,0)
+            if ws.sock.status=='tcpopening'then
+                ws.sock:update()
+                if ws.sock.status=='closed'then
+                    ws.status='dead'
+                    MES.new('warn',text.wsFailed)
                 end
-                if ws.status=='connecting'then
-                    local mes=CHN_pop(ws.readCHN)
-                    if mes then
-                        if mes=='success'then
-                            ws.status='running'
-                            ws.lastPingTime=time
-                            ws.lastPongTime=time
-                            ws.pongTimer=1
-                        else
-                            ws.status='dead'
-                            MES.new('warn',text.wsFailed..": "..(mes=="timeout"and text.netTimeout or mes))
-                        end
-                    end
-                elseif ws.status=='running'then
-                    if time-ws.lastPingTime>ws.pingInterval then
-                        WS.send(name,"",'pong')
-                    end
-                    if time-ws.lastPongTime>6+2*ws.pingInterval then
-                        WS.close(name)
-                    end
+            elseif ws.sock.status=='connecting'then
+                ws.sock:update()
+                if ws.sock.status=='open'then
+                    ws.status='running'
+                    ws.lastPingTime=time
+                    ws.lastPongTime=time
+                    ws.pongTimer=1
                 end
-                if ws.sendTimer>0 then ws.sendTimer=ws.sendTimer-dt end
-                if ws.pongTimer>0 then ws.pongTimer=ws.pongTimer-dt end
-                if ws.alertTimer>0 then ws.alertTimer=ws.alertTimer-dt end
-            else
-                ws.status='dead'
-                local err=ws.thread:getError()
-                if err then
-                    err=err:sub((err:find(":",(err:find(":")or 0)+1)or 0)+1,(err:find("\n")or 0)-1)
-                    MES.new('warn',text.wsClose..err)
+            elseif ws.sock.status=='open'or ws.sock.status=='closing'then
+                ws.sock:update()
+                if ws.sock.status=='closed'then
+                    ws.status='dead'
+                    MES.new('warn',text.wsClose..(ws.sock.errMes or"Closed"))
                     WS.alert(name)
                 end
             end
+            if ws.sendTimer>0 then ws.sendTimer=ws.sendTimer-dt end
+            if ws.pongTimer>0 then ws.pongTimer=ws.pongTimer-dt end
+            if ws.alertTimer>0 then ws.alertTimer=ws.alertTimer-dt end
         end
     end
 end
