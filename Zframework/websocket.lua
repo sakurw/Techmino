@@ -196,14 +196,15 @@ local socks={}setmetatable(socks,{__index=function(_,name)WS.new(name)return soc
 function WS.new(name,_subpath,_body,_timeout)
     local m={
         real=true,
+
         socket=socket.tcp(),
         _path=path..(_subpath or""),
         _body=_body or"",
-        _timeout=_timeout,
+        _connectCounter=_timeout or 6,
 
         _continue="",
         _buffer="",
-        _length=0,
+        _length=2,
         _head=nil,
 
         errMes=false,
@@ -268,7 +269,6 @@ function WS.update(dt)
         local sock=self.socket
         if self.status=='tcpopening'then
             local _,err=sock:connect(host,port)
-            self._length = self._length+1
             if err=="already connected"then
                 if not self._body then self._body=""end
                 sock:send(
@@ -285,12 +285,15 @@ function WS.update(dt)
                 self.status='connecting'
                 self._length=2
                 self._body=nil
-            elseif self._length>600 then
-                self.errMes=err
-                self.status='closed'
-                self:onerror(self.errMes)
-                WS.alert(name)
-                MES.new('warn',text.wsClose..(self.errMes or"Unknown reason"))
+            else
+                self._connectTime=self._connectTime-dt
+                if self._connectTime<0 then
+                    self.errMes=err or"Timeout"
+                    self.status='closed'
+                    self:onerror(self.errMes)
+                    WS.alert(name)
+                    MES.new('warn',text.wsClose..self.errMes)
+                end
             end
         elseif self.status=='connecting'then
             local res=sock:receive("*l")
