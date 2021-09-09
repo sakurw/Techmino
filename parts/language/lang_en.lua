@@ -25,7 +25,7 @@ return{
     replaying="[Replay]",
     tasUsing="[TAS]",
 
-    stage="Stage $1",
+    stage="Stage $1 completed",
     great="Great!",
     awesome="Awesome!",
     almost="Almost!",
@@ -781,7 +781,9 @@ return{
         ['blind_l']=       {"Blind",             "SUDDEN+",    "For professionals."},
         ['blind_u']=       {"Blind",              "?",         "Are you ready?"},
         ['blind_wtf']=     {"Blind",             "WTF",        "You're not ready."},
-        ['classic_fast']=  {"Classic",           "CTWC",       "High-speed classic mode."},
+        ['classic_h']=     {"Classic",           "HARD",       "A medium speed recreation from the 80s."},
+        ['classic_l']=     {"Classic",           "LUNATIC",    "A high-speed recreation from the 80s."},
+        ['classic_u']=     {"Classic",           "ULTIMATE",   "A very high-speed recreation from the 80s."},
         ['survivor_e']=    {"Survivor",          "EASY",       "How long can you survive?"},
         ['survivor_n']=    {"Survivor",          "NORMAL",     "How long can you survive?"},
         ['survivor_h']=    {"Survivor",          "HARD",       "How long can you survive?"},
@@ -830,6 +832,7 @@ return{
 
         ['master_l']=      {"Master",            "LUNATIC"},
         ['master_u']=      {"Master",            "ULTIMATE"},
+        ['classic_fast']=  {"Classic",           "CTWC"},
 
         ['custom_clear']=  {"Custom",            "NORMAL"},
         ['custom_puzzle']= {"Custom",            "PUZZLE"},

@@ -16,7 +16,7 @@ return{
     replaying="[Replay]",
     -- tasUsing="[TAS]",
 
-    stage="Fase $1",
+    -- stage="Stage $1 completed",
     great="Ótimo!",
     awesome="Incrível!",
     almost="Quase!",
@@ -770,7 +770,9 @@ return{
         ['blind_l']=            {"Cego",             "DE REPENTE+",  "For professionals."},
         ['blind_u']=            {"Cego",              "?",           "Are you ready?"},
         ['blind_wtf']=          {"Cego",             "WTF",          "You're not ready."},
-        ['classic_fast']=       {"Clássico",         "CTWC",         "Modo clássico rápido. "},
+        ['classic_h']=          {"Classic",          "DIFÍCIL",      "Modo clássico rápido."},
+        ['classic_l']=          {"Classic",          "LUNÁTICO",     "Modo clássico rápido."},
+        ['classic_u']=          {"Classic",          "ULTIMATE",     "Modo clássico rápido."},
         ['survivor_e']=         {"Sobrevivente",     "FACIL",        "Por quanto sobrevive?"},
         ['survivor_n']=         {"Sobrevivente",     "NORMAL",       "Por quanto sobrevive?"},
         ['survivor_h']=         {"Sobrevivente",     "DIFÍCIL",      "Por quanto sobrevive?"},
@@ -819,6 +821,7 @@ return{
 
         ['master_l']=           {"Mestre",           "LUNÁTICO"},
         ['master_u']=           {"Mestre",           "ULTIMATE"},
+        ['classic_fast']=       {"Clássico",         "CTWC"},
 
         ['custom_clear']=       {"Custom",           "NORMAL"},
         ['custom_puzzle']=      {"Custom",           "PUZZLE"},

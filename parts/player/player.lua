@@ -47,6 +47,9 @@ function Player:popScore(score)
         )
     end
 end
+function Player:stageComplete(stage)
+    self:_showText(text.stage:gsub("$1",stage),0,-120,60,'fly',1.26)
+end
 function Player:createLockFX()
     if self.gameEnv.lockFX then
         local CB=self.cur.bk
@@ -999,8 +1002,8 @@ do--Player.drop(self)--Place piece
     local reAtk={0,0,1,1,1,2,2,3,3}
     local reDef={0,1,1,2,3,3,4,4,5}
 
-    local spinVoice={'zspin','sspin','jspin','lspin','tspin','ospin','ispin','zspin','sspin','pspin','qspin','fspin','espin','tspin','uspin','vspin','wspin','xspin','jspin','lspin','rspin','yspin','hspin','nspin','ispin'}
-    local clearVoice={'single','double','triple','techrash','pentcrash','hexcrash'}
+    local spinVoice={'zspin','sspin','jspin','lspin','tspin','ospin','ispin','zspin','sspin','pspin','qspin','fspin','espin','tspin','uspin','vspin','wspin','xspin','jspin','lspin','rspin','yspin','nspin','hspin','ispin','ispin','cspin','ispin','ospin'}
+    local clearVoice={'single','double','triple','techrash','pentacrash','hexacrash'}
     local spinSFX={[0]='spin_0','spin_1','spin_2'}
     local clearSFX={'clear_1','clear_2','clear_3'}
     local renSFX={}for i=1,11 do renSFX[i]='ren_'..i end
