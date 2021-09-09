@@ -203,7 +203,7 @@ function WS.new(name,_subpath,_body,_timeout)
 
         _continue="",
         _buffer="",
-        _length=2,
+        _length=0,
         _head=nil,
 
         errMes=false,
@@ -268,6 +268,7 @@ function WS.update(dt)
         local sock=self.socket
         if self.status=='tcpopening'then
             local _,err=sock:connect(host,port)
+            self._length = self._length+1
             if err=="already connected"then
                 if not self._body then self._body=""end
                 sock:send(
@@ -282,8 +283,9 @@ function WS.update(dt)
                     self._body
                 )
                 self.status='connecting'
+                self._length=2
                 self._body=nil
-            elseif err then
+            elseif self._length>600 then
                 self.errMes=err
                 self.status='closed'
                 self:onerror(self.errMes)
