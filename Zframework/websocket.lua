@@ -111,7 +111,7 @@ function Sock:read()
 end
 
 local mask_key={1,14,5,14}
-local function send(sock,opcode,message)
+local function send(sock,opcode,message)print(sock)
     -- message type
     sock:send(char(bor(0x80,opcode)))
 
@@ -200,7 +200,7 @@ function WS.new(name,_subpath,_body,_timeout)
         socket=socket.tcp(),
         _path=path..(_subpath or""),
         _body=_body or"",
-        _connectCounter=_timeout or 6,
+        _connectTimer=_timeout or 6,
 
         _continue="",
         _buffer="",
@@ -228,41 +228,27 @@ function WS.new(name,_subpath,_body,_timeout)
     return m
 end
 
-function WS.setPingInterval(name,interval)socks[name].pingInterval=interval end
-function WS.setOnMessage(name,func)socks[name].onmessage=func end
-function WS.setOnClose(name,func)socks[name].onclose=func end
-function WS.setOnError(name,func)socks[name].onerror=func end
-
 function WS.send(name,message)
     if socks[name].status=='open'then
         socks[name]:send(message)
     end
 end
+function WS.read(name)return socks[name]:read()end
+function WS.close(name)socks[name]:close()end
+function WS.alert(name)socks[name].alertTimer=2.6 end
 
-function WS.read(name)
-    return socks[name]:read()
-end
-
-function WS.status(name)
-    return socks[name].status
-end
-
+function WS.setPingInterval(name,interval)socks[name].pingInterval=interval end
+function WS.setOnMessage(name,func)socks[name].onmessage=func end
+function WS.setOnClose(name,func)socks[name].onclose=func end
+function WS.setOnError(name,func)socks[name].onerror=func end
+function WS.status(name)return socks[name].status end
 function WS.getTimers(name)
     local self=socks[name]
     return self.pongTimer,self.sendTimer,self.alertTimer
 end
 
-function WS.alert(name)
-    socks[name].alertTimer=2.6
-end
-
-function WS.switchHost(_1,_2,_3)
-    for _,s in next,socks do s:close()end
-    host=_1
-    port=_2 or port
-    path=_3 or path
-end
-
+function WS.switchHost(_1,_2,_3)WS.closeAll()host,port,path=_1,_2 or port,_3 or path end
+function WS.closeAll()for _,s in next,socks do s:close()end end
 function WS.update(dt)
     local t=timer()
     for name,self in next,socks do
@@ -286,8 +272,8 @@ function WS.update(dt)
                 self._length=2
                 self._body=nil
             else
-                self._connectTime=self._connectTime-dt
-                if self._connectTime<0 then
+                self._connectTimer=self._connectTimer-dt
+                if self._connectTimer<0 then
                     self.errMes=err or"Timeout"
                     self.status='closed'
                     self:onerror(self.errMes)
