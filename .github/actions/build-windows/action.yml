@@ -25,6 +25,7 @@ runs:
       uses: ./.github/actions/get-cc
       with:
         arch: ${{ inputs.arch }}
+        tag: techmino-alize-1
     - name: Download ResourceHacker
       uses: ./.github/actions/get-unzip
       with:

@@ -36,6 +36,7 @@ runs:
       with:
         arch: android_aarch64
         dir: ColdClear/arm64-v8a
+        tag: techmino-alize-1
     - name: Process ColdClear arm64-v8a
       shell: bash
       run: |
@@ -48,6 +49,7 @@ runs:
       with:
         arch: android_armv7
         dir: ColdClear/armeabi-v7a
+        tag: techmino-alize-1
     - name: Process ColdClear armeabi-v7a
       shell: bash
       run: |

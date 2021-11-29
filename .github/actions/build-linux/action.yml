@@ -23,6 +23,7 @@ runs:
       uses: ./.github/actions/get-cc
       with:
         arch: linux
+        tag: techmino-alize-1
     - name: Pack Techmino
       shell: bash
       run: |

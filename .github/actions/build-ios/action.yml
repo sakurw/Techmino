@@ -62,6 +62,7 @@ runs:
       uses: ./.github/actions/get-cc
       with:
         arch: iOS
+        tag: techmino-alize-1
     - name: Update source codes
       shell: bash
       run: |

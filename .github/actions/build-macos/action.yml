@@ -44,6 +44,7 @@ runs:
       uses: ./.github/actions/get-cc
       with:
         arch: macOS
+        tag: techmino-alize-1
     - name: Fastlane match
       uses: maierj/fastlane-action@v2.0.1
       with:
