@@ -95,7 +95,7 @@ return{
 
     noScore="No scores",
     modeLocked="Locked",
-    unlockHint="RankB以上を取得すると解放されます",
+    unlockHint="Rank B以上を取得すると解放されます",
     highScore="High Scores",
     newRecord="New Record!",
 
@@ -191,14 +191,14 @@ return{
         "入力/回転/Hold:",
         "Block/Row/Atk.:",
         "Recv./Res./Asc.:",
-        "Dig/Dig Atk.:",
-        "Eff./Dig Eff.:",
+        "Dig/Dig Atk:",
+        "Eff/Dig Eff:",
         "B2B/B3B:",
         "PC/HPC:",
         "最適化 ミス/Rate:",
     },
     aboutTexts={
-        "これは「ただの」落ちものパズルゲームです。本当ですよ",
+        "これは\"ただの\"落ちものパズルゲームです。本当ですよ",
         "Inspired by C2/IO/JS/WWC/KOS etc.",
         "",
         "Powered by LÖVE",
@@ -210,13 +210,14 @@ return{
         FNNS and"/"or"詳しくはZictionaryをご覧ください",
     },
     staff={
-        "ORIGINALLY BY MrZ",
+        "ORIGINALLY",
+		 "MrZ",
         "E-Mail: 1046101471@qq.com",
         "",
-        "Programmed, Developed, And Designed By",
+        "プログラム、開発、デザイン",
         "MrZ",
         "",
-        "Music Made Using",
+        "楽曲作成ツール",
         "Beepbox",
         "FL Studio",
         "FL Mobile",
@@ -319,7 +320,7 @@ return{
     WidgetText={
         main={
             offline="ソロプレイ",
-            qplay="続きからプレイ",
+            qplay="続きから",
             online="マルチプレイ",
             custom="カスタムプレイ",
             setting="設定",
@@ -368,7 +369,7 @@ return{
         },
         net_newRoom={
             title="部屋設定",
-            roomName="部屋名 (デフォルト: \"[ユーザーネーム]'s room\")",
+            roomName="部屋名 (デフォルト: \"[username]'s room\")",
             password="パスワード",
             description="部屋説明",
 
@@ -468,7 +469,7 @@ return{
             warn="警告演出",
 
             clickFX="クリック演出",
-            power="バッテリー情報",
+            power="バッテリー",
             clean="素早い描画",
             fullscreen="フルスクリーン",
 
@@ -760,7 +761,7 @@ return{
         ['sprint_100l']=    {"Sprint",            "100L",       "100 Line消去!"},
         ['sprint_400l']=    {"Sprint",            "400L",       "400 Line消去!"},
         ['sprint_1000l']=   {"Sprint",            "1,000L",      "1,000 Line消去!"},
-        ['sprintPenta']=    {"Sprint",            "PENTOMINO",  "18のペントミノで40 Line消去!"},
+        ['sprintPenta']=    {"Sprint",            "PENTOMINO",  "ペントミノで40 Line消去!"},
         ['sprintMPH']=      {"Sprint",            "MPH",        "ミノ順なし\nNextなし\nHoldなし"},
         ['dig_10l']=        {"Dig",               "10L",        "10 Line下穴を消去"},
         ['dig_40l']=        {"Dig",               "40L",        "40 Line下穴を消去"},
@@ -830,7 +831,7 @@ return{
         ['pc_inf']=         {"Inf. PC Challenge", "",           "できる限りたくさんのパフェを"},
         ['tech_n']=         {"Tech",              "NORMAL",     "B2Bを繋げ続けよう!"},
         ['tech_n_plus']=    {"Tech",              "NORMAL+",    "回転入れとパフェだけ"},
-        ['tech_h']=         {"Tech",              "HARD",       "B2Bを繋げ続けよう!"},
+        ['tech_h']=         {"Tech",              "HARD",       "B2Bを続けよう!"},
         ['tech_h_plus']=    {"Tech",              "HARD+",      "回転入れとパフェだけ"},
         ['tech_l']=         {"Tech",              "LUNATIC",    "回転入れとパフェだけ"},
         ['tech_l_plus']=    {"Tech",              "LUNATIC+",   "回転入れとパフェだけ"},
