@@ -17,7 +17,7 @@ return{
     newDay="新しい1日、新しい始まりです!",
     playedLong="長時間プレイしています、適度に休憩をして!",
     playedTooMuch="かなり長くプレイしています! Techminoは楽しいですが、休憩を忘れずに!",
-    settingWarn="使用頻度の低い設定を変更しています。注意してください。",
+    settingWarn="使用頻度の低い設定に変更しています。注意してください。",
 
     atkModeName={"ランダム","バッジ狙い","トドメ撃ち","カウンター"},
     royale_remain="残り $1 人",
@@ -95,8 +95,8 @@ return{
     VKCurW="現在の配置",
 
     noScore="スコア無し",
-    modeLocked="ロック",
-    unlockHint="ランクB以上を取得すると解放されるよ!",
+    modeLocked="未開放",
+    unlockHint="前のステージでランクB以上を取得すると解放されるよ!",
     highScore="最高得点",
     newRecord="新記録!",
 
